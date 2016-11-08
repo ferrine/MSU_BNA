@@ -10,7 +10,7 @@ class SimPanel(object):
         if (not isinstance(X, pd.DataFrame) or
                 not isinstance(y, pd.Series)):
             raise TypeError('Please provide X as pd.DataFrame and y as pd.Series')
-        if idcol is None or idindex is None:
+        if idcol is None and idindex is None:
             raise ValueError('Please provide idcol or idindex')
         self.name = name
         self.groups = OrderedDict()
