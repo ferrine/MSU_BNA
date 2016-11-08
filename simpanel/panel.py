@@ -6,21 +6,20 @@ from simpanel.glm import Glm
 
 
 class SimPanel(object):
-    def __init__(self, name, X, y, sim, idindex=None, idcol=None):
-        if (not isinstance(X, pd.DataFrame) or
-                not isinstance(y, pd.Series)):
+    def __init__(self, name, data, target, sim=None, idindex=None, idcol=None):
+        if not isinstance(data, pd.DataFrame):
             raise TypeError('Please provide X as pd.DataFrame and y as pd.Series')
         if idcol is None and idindex is None:
             raise ValueError('Please provide idcol or idindex')
         self.name = name
+        self.ylabel = target
         self.groups = OrderedDict()
         self.advifits = OrderedDict()
-        full = pd.concat([X, y], 1)  # type: pd.DataFrame
         level = idindex
         if idcol:
-            full.set_index(idcol, append=True, inplace=True)
+            data = data.set_index(idcol, append=True)
             level = idcol
-        for label, df in full.groupby(level=level):
+        for label, df in data.groupby(level=level):
             self.groups[label] = df
         self.sim = sim
 
