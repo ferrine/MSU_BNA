@@ -16,9 +16,10 @@ class FEPanel(Glm):
             x, columns=index, drop_first=not intercept, dummy_na=dummy_na
         )   # type: pd.DataFrame
         is_dummy = lambda s: any(s.startswith('%s_' % l) for l in index)
-        self._dummies = list(filter(is_dummy, x.columns))
+        self.dummies = list(filter(is_dummy, x.columns))
+        self.not_dummies = list(set(x.columns) - set(self.dummies))
         new_priors = dict.fromkeys(
-            self._dummies, self.default_intercept_prior
+            self.dummies, self.default_intercept_prior
         )
         if priors is None:
             priors = dict()
@@ -30,8 +31,8 @@ class FEPanel(Glm):
 
     @property
     def dummies_vars(self):
-        return [self[v] for v in self.vars.keys() if v in self._dummies and v != 'y']
+        return [self[v] for v in self.dummies]
 
     @property
     def not_dummies_vars(self):
-        return [self[v] for v in self.vars.keys() if v not in self._dummies and v != 'y']
+        return [self[v] for v in self.not_dummies]
