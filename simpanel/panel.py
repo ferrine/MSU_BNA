@@ -1,28 +1,37 @@
 # coding=utf-8
-from collections import OrderedDict
+from pymc3.models.linear import Glm
 import pandas as pd
-import pymc3 as pm
-from simpanel.glm import Glm
 
 
-class SimPanel(object):
-    def __init__(self, name, data, target, sim=None, idindex=None, idcol=None):
-        if not isinstance(data, pd.DataFrame):
-            raise TypeError('Please provide X as pd.DataFrame and y as pd.Series')
-        if idcol is None and idindex is None:
-            raise ValueError('Please provide idcol or idindex')
-        self.name = name
-        self.ylabel = target
-        self.groups = OrderedDict()
-        self.advifits = OrderedDict()
-        level = idindex
-        if idcol:
-            data = data.set_index(idcol, append=True)
-            level = idcol
-        for label, df in data.groupby(level=level):
-            self.groups[label] = df
-        self.sim = sim
+class FEPanel(Glm):
+    def __init__(self, x, y, index, dummy_na=True, intercept=False, labels=None,
+                 priors=None, init=None, vars=None, family='normal', name=''):
+        if not isinstance(x, pd.DataFrame):
+            raise TypeError('Need Pandas DataFrame for x')
+        if not isinstance(y, pd.Series):
+            raise TypeError('Need Pandas Series for y')
+        if not isinstance(index, (tuple, list)):
+            index = [index]
+        x = pd.get_dummies(
+            x, columns=index, drop_first=not intercept, dummy_na=dummy_na
+        )   # type: pd.DataFrame
+        is_dummy = lambda s: any(s.startswith('%s_' % l) for l in index)
+        self._dummies = list(filter(is_dummy, x.columns))
+        new_priors = dict.fromkeys(
+            self._dummies, self.default_intercept_prior
+        )
+        if priors is None:
+            priors = dict()
+        new_priors.update(priors)
+        super(FEPanel, self).__init__(
+            x, y, intercept, labels,
+            new_priors, init, vars, family, name
+        )
 
     @property
-    def data(self):
-        return pd.concat(self.groups.values())
+    def dummies_vars(self):
+        return [self[v] for v in self.vars.keys() if v in self._dummies and v != 'y']
+
+    @property
+    def not_dummies_vars(self):
+        return [self[v] for v in self.vars.keys() if v not in self._dummies and v != 'y']
